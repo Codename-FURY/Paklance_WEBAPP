@@ -6,6 +6,7 @@ const dotenv = require("dotenv");
 const jobseekerRoute = require("./Routes/jobseekerRoute");
 const jobproviderRoute = require("./Routes/jobproviderRoute");
 const adminRoute = require("./Routes/adminRoute");
+const faceapiRoute = require("./Routes/faceApiRoute");
 const path = require('path');
 dotenv.config();
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -26,6 +27,7 @@ app.use(bodyParser.json());
 app.use('/seeker',jobseekerRoute);
 app.use('/provider',jobproviderRoute);
 app.use('/admin',adminRoute);
+// app.use('/faceapi',faceapiRoute)
 app.use((err,req,res,next)=>{
   errStatus = err.status || 500
   errMessage = err.message || 500

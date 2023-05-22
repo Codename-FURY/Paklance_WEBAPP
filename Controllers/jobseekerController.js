@@ -185,55 +185,6 @@ const saveBankDetails = async (req, res, next) => {
     next(err);
   }
 };
-// face recognition
-// const Clarifai = require('clarifai');
-// const faceapi = require('face-api.js');
-// const fs = require('fs');
-
-// const apiKey = 'YOUR_CLARIFAI_API_KEY';
-// const faceMatcherThreshold = 0.6;
-
-// const app = new Clarifai.App({ apiKey });
-
-// const loadModels = async () => {
-//   await faceapi.nets.ssdMobilenetv1.loadFromDisk('models');
-//   await faceapi.nets.faceLandmark68Net.loadFromDisk('models');
-//   await faceapi.nets.faceRecognitionNet.loadFromDisk('models');
-// };
-
-// const recognizeFaces = async (req, res, next) => {
-//   try {
-//     const uploadedImages = req.files;
-//     const selfieImage = req.file;
-
-//     await loadModels();
-
-//     const recognizeImage = async (imagePath) => {
-//       const imageBuffer = fs.readFileSync(imagePath);
-//       const image = await faceapi.bufferToImage(imageBuffer);
-//       const detections = await faceapi.detectAllFaces(image).withFaceLandmarks().withFaceDescriptors();
-
-//       return new faceapi.LabeledFaceDescriptors('User', detections.map((d) => d.descriptor));
-//     };
-
-//     const uploadedPromises = uploadedImages.map((image) => recognizeImage(image.path));
-//     const selfiePromise = recognizeImage(selfieImage.path);
-
-//     const uploadedResults = await Promise.all(uploadedPromises);
-//     const selfieResult = await selfiePromise;
-
-//     const faceMatcher = new faceapi.FaceMatcher(uploadedResults, faceMatcherThreshold);
-
-//     const matches = selfieResult.descriptors.map((descriptor) => ({
-//       label: faceMatcher.findBestMatch(descriptor).label,
-//       distance: faceMatcher.findBestMatch(descriptor).distance,
-//     }));
-
-//     res.status(201).json({ message: 'Profile created successfully', matches });
-//   } catch (err) {
-//     next(err);
-//   }
-// };
 
 // User Profile
 const getProfile = async (req, res, next) => {
