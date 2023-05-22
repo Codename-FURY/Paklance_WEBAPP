@@ -5,9 +5,7 @@ const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const Profile = require('../Models/ProfileModel');
 const BankDetails = require('../Models/bankDetails');
-// const multer = require('multer');
-// const path = require('path');
-// const fs = require('fs');
+const randomstring = require('randomstring');
 
 
 // Register
@@ -140,7 +138,11 @@ const resetPassword = async (req, res, next) => {
 const createProfile = async (req, res, next) => {
   try {
     const userId = req.userId;
+    const existingProfile = await Profile.findOne({ userId });
 
+    if (existingProfile) {
+      return res.status(409).json({ message: 'Profile already exists' });
+    }
     const { name, address, age, about, schooling, graduation, experience } = req.body;
 
     const profile = new Profile({
@@ -168,7 +170,11 @@ const createProfile = async (req, res, next) => {
 const saveBankDetails = async (req, res, next) => {
   const { cardHolderName, cardNumber, expiryDate, cvc } = req.body;
   const userId = req.userId 
+  const existingBankDetails  = await BankDetails.findOne({ userId });
 
+  if (existingBankDetails) {
+    return res.status(409).json({ message: 'Details already exists' });
+  }
   try {
     const bankDetails = new BankDetails({
       userId,
@@ -185,9 +191,26 @@ const saveBankDetails = async (req, res, next) => {
     next(err);
   }
 };
+// ME Api
+const getME = async (req, res, next) => {
+  try {
+    const userId = req.userId;
 
-// User Profile
-const getProfile = async (req, res, next) => {
+    const user = await User.findOne({ _id: userId });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const { role,email,firstName,lastName, ...userInfo } = user; // Extracting the 'role' field from user
+
+    res.status(200).json({  firstName,lastName,role, email,});
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Display Profile
+const displayProfile = async (req, res, next) => {
   try {
     const userId = req.userId 
 
@@ -237,7 +260,7 @@ module.exports = {
   resetPassword,
   createProfile,
   saveBankDetails,
-  getProfile,
-  updateProfile
-  // recognizeFaces
+  displayProfile,
+  updateProfile,
+  getME
 };

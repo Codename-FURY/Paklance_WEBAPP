@@ -104,10 +104,10 @@ const deleteProject = async (req, res, next)  => {
   // CREATE
   const createFixedRateProject = async (req, res, next) => {
     try {
-      const { userId } = req;
+      const userId = req.userId;
       const { title, description, budget, deadline } = req.body;
   
-      const fixedRateProject = new FixedRateProject({
+      const project = new FixedRateProject({
         userId,
         title,
         description,
@@ -115,16 +115,24 @@ const deleteProject = async (req, res, next)  => {
         deadline,
       });
   
-      const savedProject = await fixedRateProject.save();
+      await project.save();
   
-      res.json(savedProject);
+      const hoursToDeadline = (deadline - Date.now()) / (1000 * 60 * 60); // Calculate remaining hours to deadline
+  
+      setTimeout(async () => {
+        await FixedRateProject.findByIdAndDelete(project._id); // Delete the project after the specified hours
+  
+        console.log('Project deleted:', project._id);
+      }, hoursToDeadline * 60 * 60 * 1000);
+  
+      res.status(201).json({ message: 'Project created successfully', project });
     } catch (err) {
       next(err);
     }
   };
 
   // SHOW ALL
-  const getAllFixedRateProjects = async (req, res, next) => {
+const getAllFixedRateProjects = async (req, res, next) => {
     try {
       const  userId  = req.userId;
       const fixedRateProjects = await FixedRateProject.find({ userId });

@@ -13,35 +13,29 @@ const project_controller = require('../Controllers/ProjectController');
 
 
 
-
 // Set up Multer storage
 const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-      const imagePath = path.join(__dirname, '..', 'public', 'profile-pictures');
-  
-      // Create the directory if it doesn't exist
-      if (!fs.existsSync(imagePath)) {
-        fs.mkdirSync(imagePath, { recursive: true });
-      }
-  
-      cb(null, imagePath);
-    },
-    filename: (req, file, cb) => {
-      const userId = req.userId;
-      const filename = `${userId}-${file.originalname}`;
-      cb(null, filename);
-    },
-  });
-  
-  // Create a Multer instance
-  const upload = multer({ storage });
+  destination: (req, file, cb) => {
+    const imagePath = path.join(__dirname, '..', 'public', 'profile-pictures');
 
+    // Create the directory if it doesn't exist
+    if (!fs.existsSync(imagePath)) {
+      fs.mkdirSync(imagePath, { recursive: true });
+    }
 
+    cb(null, imagePath);
+  },
+  filename: (req, file, cb) => {
+    const userId = req.userId;
+    const filename = `${userId}-${file.originalname}`;
+    cb(null, filename);
+  },
+});
 
+// Create a Multer instance
+const upload = multer({ storage });
 
-
-
-
+// Add the uploadProfilePicture route with Multer middleware
 router.put('/upload-profile-picture', verifyToken, upload.single('profilePic'), uploadProfilePicture);
 router.post("/register",jobprovider_controller.register);
 router.post("/login",jobprovider_controller.login);
@@ -49,7 +43,8 @@ router.post('/forgotpassword',jobprovider_controller.forgotPassword);
 router.put('/resetpassword/:token',jobprovider_controller.resetPassword);
 router.post('/createProfile',verifyToken,jobprovider_controller.createProfile);
 router.post('/addbankDetails',verifyToken,jobprovider_controller.saveBankDetails);
-router.get('/getProfile', verifyJobProviderToken, jobprovider_controller.getProfile);
+router.get('/getME', verifyToken, jobprovider_controller.getME);
+router.get('/displayProfile', verifyJobProviderToken, jobprovider_controller.displayProfile);
 router.put('/updateProfile', verifyJobProviderToken, jobprovider_controller.updateProfile);
 router.post("/createproject",verifyJobProviderToken,project_controller.createProject);
 router.put("/updateproject/:id",verifyJobProviderToken,project_controller.updateProject);
