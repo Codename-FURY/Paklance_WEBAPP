@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>CV</title>
+  <style>
+    /* CSS styles for the CV */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f2f2f2;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #fff;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .profile-picture {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .profile-picture img {
+      width: 200px;
+      height: auto;
+      border-radius: 50%;
+    }
+
+    .name {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .personal-details {
+      margin-bottom: 30px;
+    }
+
+    .personal-details h2 {
+      font-size: 24px;
+      margin-bottom: 10px;
+      border-bottom: 1px solid #ccc;
+      padding-bottom: 5px;
+    }
+
+    .personal-details p {
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    .education,
+    .experience {
+      margin-bottom: 30px;
+    }
+
+    .education h2,
+    .experience h2 {
+      font-size: 24px;
+      margin-bottom: 10px;
+      border-bottom: 1px solid #ccc;
+      padding-bottom: 5px;
+    }
+
+    .school,
+    .graduation,
+    .job {
+      margin-bottom: 15px;
+    }
+
+    .school h3,
+    .graduation h3,
+    .job h3 {
+      font-size: 18px;
+      margin-bottom: 5px;
+    }
+
+    .school p,
+    .graduation p,
+    .job p {
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    .school p:last-child,
+    .graduation p:last-child,
+    .job p:last-child {
+      margin-bottom: 0;
+    }
+
+    /* Additional styles for a more professional look */
+    .container {
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    h1,
+    h2,
+    h3 {
+      color: #333;
+      margin-top: 0;
+    }
+
+    h1 {
+      font-size: 32px;
+      margin-bottom: 10px;
+    }
+
+    h2 {
+      font-size: 24px;
+    }
+
+    h3 {
+      font-size: 18px;
+    }
+
+    p {
+      color: #555;
+    }
+
+    strong {
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="profile-picture">
+      <!-- Profile picture here -->
+      <img src="<%= profilePic %>" alt="Profile Picture">
+    </div>
+    <div class="name">
+      <!-- Name here -->
+      <h1><%= name %></h1>
+    </div>
+
+    <div class="personal-details">
+      <h2>Personal Details</h2>
+      <p><strong>Address:</strong> <%= address %></p>
+      <p><strong>Age:</strong> <%= age %></p>
+      <p><strong>About:</strong> <%= about %></p>
+    </div>
+
+    <div class="education">
+      <h2>Education</h2>
+      <% education.schooling.forEach(function(school) { %>
+        <div class="school">
+          <h3><strong>School:</strong><%= school.schoolName %></h3>
+          <p><strong>Year Done:</strong><%= school.yearDone %></p>
+          <p><strong>Brief:</strong><%= school.brief %></p>
+        </div>
+      <% }); %>
+
+      <% education.graduation.forEach(function(graduation) { %>
+        <div class="graduation">
+          <h3><strong>University:</strong><%= graduation.universityName %></h3>
+          <p><strong>Year Done:</strong><%= graduation.yearDone %></p>
+          <p><strong>Degree:</strong><%= graduation.degree %></p>
+          <p><strong>Brief:</strong><%= graduation.brief %></p>
+        </div>
+      <% }); %>
+    </div>
+
+    <div class="experience">
+      <h2>Experience</h2>
+      <% experience.forEach(function(exp) { %>
+        <div class="job">
+          <h3><strong>Company:</strong><%= exp.companyName %></h3>
+          <p><strong>Position:</strong><%= exp.position %></p>
+          <p><strong>Time Frame:</strong><%= exp.timeframe %></p>
+          <p><%= exp.brief %></p>
+        </div>
+      <% }); %>
+    </div>
+  </div>
+</body>
+</html>

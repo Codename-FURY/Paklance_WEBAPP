@@ -1,0 +1,292 @@
+const User = require("../Models/UserModel");
+const bcrypt = require("bcryptjs");
+const { createError } = require("../utils/error");
+const jwt = require('jsonwebtoken');
+const nodemailer = require('nodemailer');
+const Profile = require('../Models/ProfileModel');
+const BankDetails = require('../Models/bankDetails');
+// const multer = require('multer');
+// const path = require('path');
+// const fs = require('fs');
+
+
+// Register
+const register = async (req, res, next) => {
+  const { firstName, lastName, email, password,role } = req.body;
+
+  try {
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      throw createError(409, 'User already exists');
+    }
+
+    const salt = bcrypt.genSaltSync(10);
+    const hash = bcrypt.hashSync(password,salt);
+
+    const newUser = new User({
+      firstName,
+      lastName,
+      email,
+      password: hash,
+      role,
+    });
+
+    await newUser.save();
+
+    res.status(201).json({ message: 'jobSeeker registered successfully' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const login = async (req, res, next) => {
+  const { email, password } = req.body;
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      throw createError(404, 'User not found');
+    }
+
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) {
+      throw createError(401, 'Incorrect password');
+    }
+
+    const payload = {
+      userId: user._id,
+      role: user.role, // Assuming the user role is stored in the "role" field of the user document
+    };
+
+    const token = jwt.sign(payload, process.env.JWT_SECRETKEY);
+    res.status(200).json({ token });
+  } catch (err) {
+    next(err);
+  }
+};
+
+
+//Forgot Password
+const forgotPassword = async (req, res, next) => {
+  try {
+    const email = req.body.email;
+    const userData = await User.findOne({ email: req.body.email });
+    if (userData) {
+      const randomString = randomstring.generate();
+      const data = await User.updateOne({ email: email }, { $set: { token: randomString } });
+      sendresetPasswordMail(userData.name, userData.email, randomString);
+      res.status(200).send({ success: true, message: "Please check your email inbox to reset your password" });
+    } else {
+      res.status(200).send({ success: true, message: "This email does not exist!" });
+    }
+  } catch (err) {
+    next(err);
+  }
+};
+
+const sendresetPasswordMail = async (name, email, token) => {
+  try {
+    const transporter = nodemailer.createTransport({
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false,
+      requireTLS: true,
+      auth: {
+        user: process.env.emailAdmin,
+        pass: process.env.emailPassword,
+      }
+    });
+
+    const mailOptions = {
+      from: process.env.emailAdmin,
+      to: email,
+      subject: 'For Password Reset',
+      html: '<p> Hi ' + name + ', please click on the link <a href="http://127.0.0.1:7000/admin/resetpassword?token=' + token + '">to reset your password </a>'
+    };
+
+    transporter.sendMail(mailOptions, function (error, info) {
+      if (error) {
+        console.log(error);
+      } else {
+        console.log('Mail has been sent', info.response);
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+// reset password
+const resetPassword = async (req, res, next) => {
+  try {
+    const { password } = req.body;
+    const token = req.params.token;
+    const userdata = await User.findOne({ token });
+    if (!userdata) {
+      return res.status(400).json({ success: false, message: 'Invalid token' });
+    } else {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      userdata.password = hashedPassword;
+      userdata.token = "";
+      await userdata.save();
+
+      res.status(200).json({ success: true, message: 'Password updated successfully' });
+    }
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Profile creation
+const createProfile = async (req, res, next) => {
+  try {
+    const userId = req.userId;
+
+    const { name, address, age, about, schooling, graduation, experience } = req.body;
+
+    const profile = new Profile({
+      userId,
+      name,
+      address,
+      age,
+      about,
+      education: {
+        schooling,
+        graduation,
+      },
+      experience,
+    });
+
+    await profile.save();
+
+    res.status(201).json({ message: 'Profile created successfully', profile });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// bank Details
+const saveBankDetails = async (req, res, next) => {
+  const { cardHolderName, cardNumber, expiryDate, cvc } = req.body;
+  const userId = req.userId 
+
+  try {
+    const bankDetails = new BankDetails({
+      userId,
+      cardHolderName,
+      cardNumber,
+      expiryDate,
+      cvc
+    });
+
+    await bankDetails.save();
+
+    res.status(200).json({ message: 'Bank details saved successfully' });
+  } catch (err) {
+    next(err);
+  }
+};
+// face recognition
+// const Clarifai = require('clarifai');
+// const faceapi = require('face-api.js');
+// const fs = require('fs');
+
+// const apiKey = 'YOUR_CLARIFAI_API_KEY';
+// const faceMatcherThreshold = 0.6;
+
+// const app = new Clarifai.App({ apiKey });
+
+// const loadModels = async () => {
+//   await faceapi.nets.ssdMobilenetv1.loadFromDisk('models');
+//   await faceapi.nets.faceLandmark68Net.loadFromDisk('models');
+//   await faceapi.nets.faceRecognitionNet.loadFromDisk('models');
+// };
+
+// const recognizeFaces = async (req, res, next) => {
+//   try {
+//     const uploadedImages = req.files;
+//     const selfieImage = req.file;
+
+//     await loadModels();
+
+//     const recognizeImage = async (imagePath) => {
+//       const imageBuffer = fs.readFileSync(imagePath);
+//       const image = await faceapi.bufferToImage(imageBuffer);
+//       const detections = await faceapi.detectAllFaces(image).withFaceLandmarks().withFaceDescriptors();
+
+//       return new faceapi.LabeledFaceDescriptors('User', detections.map((d) => d.descriptor));
+//     };
+
+//     const uploadedPromises = uploadedImages.map((image) => recognizeImage(image.path));
+//     const selfiePromise = recognizeImage(selfieImage.path);
+
+//     const uploadedResults = await Promise.all(uploadedPromises);
+//     const selfieResult = await selfiePromise;
+
+//     const faceMatcher = new faceapi.FaceMatcher(uploadedResults, faceMatcherThreshold);
+
+//     const matches = selfieResult.descriptors.map((descriptor) => ({
+//       label: faceMatcher.findBestMatch(descriptor).label,
+//       distance: faceMatcher.findBestMatch(descriptor).distance,
+//     }));
+
+//     res.status(201).json({ message: 'Profile created successfully', matches });
+//   } catch (err) {
+//     next(err);
+//   }
+// };
+
+// User Profile
+const getProfile = async (req, res, next) => {
+  try {
+    const userId = req.userId 
+
+    const profile = await Profile.findOne({ userId });
+
+    if (!profile) {
+      return res.status(404).json({ message: 'Profile not found' });
+    }
+
+    res.status(200).json({ profile });
+  } catch (err) {
+    next(err);
+  }
+};
+// Update Profile
+const updateProfile = async (req, res) => {
+  try {
+    // Get the user ID from the request parameters
+    const userId = req.userId 
+
+    // Get the updated profile data from the request body
+    const updatedProfileData = req.body;
+
+    // Find the profile by user ID and update it with the new data
+    const updatedProfile = await Profile.findOneAndUpdate(
+      { userId },
+      { $set: updatedProfileData },
+      { new: true }
+    );
+
+    if (!updatedProfile) {
+      // If profile not found, return an error response
+      return res.status(404).json({ error: 'Profile not found' });
+    }
+
+    // Return the updated profile in the response
+    res.json(updatedProfile);
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = {
+  register,
+  login,
+  forgotPassword,
+  resetPassword,
+  createProfile,
+  saveBankDetails,
+  getProfile,
+  updateProfile
+  // recognizeFaces
+};
