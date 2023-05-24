@@ -44,4 +44,9 @@ router.get('/getME', verifyToken, jobseeker_controller.getME);
 router.get('/displayProfile', verifyJobSeekerToken, jobseeker_controller.displayProfile);
 router.get('/cvGenerate', verifyJobSeekerToken, cv_controller.generateCV);
 router.put('/updateProfile', verifyJobSeekerToken,  jobseeker_controller.updateProfile);
+
+// Bid
+const bid_controller = require("../Controllers/bidController");
+router.post('/createBid',verifyJobSeekerToken,bid_controller.createBid);
+router.get('/getbidstatus',verifyJobSeekerToken,bid_controller.getBidStatus);
 module.exports = router;

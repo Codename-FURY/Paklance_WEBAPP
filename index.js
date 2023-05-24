@@ -9,11 +9,13 @@ const adminRoute = require("./Routes/adminRoute");
 const path = require('path');
 dotenv.config();
 app.use(bodyParser.urlencoded({ extended: false }));
-app.use('/profile-pictures', express.static('public/profile-pictures'));
 
+// Serve static files from the "public" directory
+app.use('/profile-pictures', express.static('public/profile-pictures'));
+app.use('/project-pictures', express.static('public/project-pictures'));
 
 // MongoDB connection
-mongoose.connect(process.env.MONGO_URI , { useNewUrlParser: true, useUnifiedTopology: true })
+mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => {
     console.log('Connected to MongoDB');
   })
@@ -23,20 +25,21 @@ mongoose.connect(process.env.MONGO_URI , { useNewUrlParser: true, useUnifiedTopo
 
 // middlewares
 app.use(bodyParser.json());
-app.use('/seeker',jobseekerRoute);
-app.use('/provider',jobproviderRoute);
-app.use('/admin',adminRoute);
-app.use((err,req,res,next)=>{
-  errStatus = err.status || 500
-  errMessage = err.message || 500
+app.use('/seeker', jobseekerRoute);
+app.use('/provider', jobproviderRoute);
+app.use('/admin', adminRoute);
+app.use((err, req, res, next) => {
+  errStatus = err.status || 500;
+  errMessage = err.message || 500;
   res.status(errStatus).json({
-      success:false,
-      status:errStatus,
-      message:errMessage,
-      stack: err.stack,
+    success: false,
+    status: errStatus,
+    message: errMessage,
+    stack: err.stack,
   });
-})
+});
+
 //port
 app.listen(process.env.PORT, () => {
-  console.log('Server started on port',process.env.PORT);
+  console.log('Server started on port', process.env.PORT);
 });

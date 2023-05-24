@@ -1,205 +1,141 @@
-const JobProject = require("../Models/HourlyJobProjects");
 const { createError } = require("../utils/error");
-const FixedRateProject = require("../Models/FixedRateProject");
-// Create a hourly job project
+const Project = require("../Models/Project")
+const sharp = require("sharp"); // Required for image resizing
+const fs = require('fs');
+const multer = require('multer');
+
+// Create a new project
 const createProject = async (req, res, next) => {
-    try {
-      const { title, description, duration, budget } = req.body;
-      const userId = req.userId;
-  
-      const jobProject = new JobProject({
-        userId,
-        title,
-        description,
-        duration,
-        budget,
-      });
-  
-      const savedJobProject = await jobProject.save();
-  
-      res.status(201).json(savedJobProject);
-    } catch (err) {
-      next(err);
-    }
-};
+  try {
+    const projectPic = req.file;
+    const providerId = req.userId;
+    const projectType = req.body.projectType;
+    let deadline = req.body.deadline;
 
-// Show All hourly job projects
-const showallProjects = async (req, res, next) => {
-    try {
-      const userId = req.userId;
-      console.log(userId);
-      const jobProjects = await JobProject.find({ userId });
-  
-      res.json(jobProjects);
-    } catch (err) {
-      next(err);
-    }
-};
+    // Construct the full path URL
+    const baseUrl = `http://localhost:7000/project-pictures/`;
 
-// Showl one based on ID 
-const showprojectbyID = async (req, res, next)  => {
-    try {
-      const userId = req.userId;
-      const jobId = req.params.id;
-      const jobProject = await JobProject.findOne({ _id: jobId, userId });
-  
-      if (!jobProject) {
-        return res.status(404).json({ message: 'Job project not found' });
-      }
-  
-      res.json(jobProject);
-    } catch (err) {
-      next(err);
-    }
-  };
+    // Resize the image
+    const resizedImage = await sharp(projectPic.path)
+      .resize(200) // Adjust the desired size as per your requirement
+      .toBuffer();
 
-// Update a Job Project
-const updateProject = async (req, res, next)  => {
-    try {
-      const userId = req.userId;
-      const jobId = req.params.id;
-  
-      const { title, description, duration, budget } = req.body;
-  
-      const jobProject = await JobProject.findOneAndUpdate(
-        { _id: jobId, userId },
-        { title, description, duration, budget },
-        { new: true }
-      );
-  
-      if (!jobProject) {
-        return res.status(404).json({ message: 'Job project not found' });
-      }
-  
-      res.json(jobProject);
-    } catch (err) {
-      next(err);
-    }
-  };
+    // Save the resized image with the correct filename
+    const resizedFilename = `resized-${projectPic.filename}`;
+    await sharp(resizedImage).toFile(`public/project-pictures/${resizedFilename}`);
 
-// Delete by ID
-const deleteProject = async (req, res, next)  => {
-    try {
-      const userId = req.userId;
-      const jobId = req.params.id;
-  
-      const deletedJobProject = await JobProject.findOneAndDelete({ _id: jobId, userId });
-  
-      if (!deletedJobProject) {
-        return res.status(404).json({ message: 'Job project not found' });
-      }
-  
-      res.json("Project Deleted");
-    } catch (err) {
-      next(err);
+    // Convert the deadline based on the project type
+    let deadlineInSeconds;
+    if (projectType === 'Fixed Price Contract') {
+      // Treat deadline as the number of days and convert it to hours
+      const days = parseInt(deadline);
+      deadlineInSeconds = days * 24 * 3600; // Convert days to seconds
+    } else if (projectType === 'Hourly Project') {
+      // Treat deadline as the number of hours
+      const hours = parseInt(deadline);
+      deadlineInSeconds = hours * 3600; // Convert hours to seconds
     }
-  };
 
-  //////////////////////////////////////
-  // 
-  // Fixed Rate Controllers
-  //
-  /////////////////////////////////////
+    // Create the project record with the resized image URL, converted deadline, and formatted deadline
+    const project = new Project({
+      provider: providerId,
+      title: req.body.title,
+      description: req.body.description,
+      projectType: projectType,
+      price: req.body.price,
+      deadline: deadlineInSeconds, // Assign the converted deadline in seconds
+      picture: baseUrl + resizedFilename // Set the resized image URL for frontend display
+    });
 
-  // CREATE
-  const createFixedRateProject = async (req, res, next) => {
-    try {
-      const userId = req.userId;
-      const { title, description, budget, deadline } = req.body;
-  
-      const project = new FixedRateProject({
-        userId,
-        title,
-        description,
-        budget,
-        deadline,
-      });
-  
-      await project.save();
-  
-      const hoursToDeadline = (deadline - Date.now()) / (1000 * 60 * 60); // Calculate remaining hours to deadline
-  
-      setTimeout(async () => {
-        await FixedRateProject.findByIdAndDelete(project._id); // Delete the project after the specified hours
-  
-        console.log('Project deleted:', project._id);
-      }, hoursToDeadline * 60 * 60 * 1000);
-  
-      res.status(201).json({ message: 'Project created successfully', project });
-    } catch (err) {
-      next(err);
-    }
-  };
-
-  // SHOW ALL
-const getAllFixedRateProjects = async (req, res, next) => {
-    try {
-      const  userId  = req.userId;
-      const fixedRateProjects = await FixedRateProject.find({ userId });
-  
-      res.json(fixedRateProjects);
-    } catch (err) {
-      next(err);
-    }
-  }; 
-
-  // UPDATE 
-  const updateFixedRateProject = async (req, res, next) => {
-    try {
-      const  projectId  = req.params.id;
-      const { title, description, budget, deadline } = req.body;
-  
-      const updatedProject = await FixedRateProject.findByIdAndUpdate(
-        projectId,
-        { title, description, budget, deadline },
-        { new: true }
-      );
-  
-      res.json(updatedProject);
-    } catch (err) {
-      next(err);
-    }
-  }; 
-
-  // DELETE
-  const deleteFixedRateProject = async (req, res, next) => {
-    try {
-      const  projectId  = req.params.id;
-  
-      await FixedRateProject.findByIdAndDelete(projectId);
-  
-      res.json({ message: 'Project deleted successfully' });
-    } catch (err) {
-      next(err);
-    }
-  };
-
-  // GET BY ID
-  const getFixedRateProjectById = async (req, res, next) => {
-    try {
-      const  projectId  = req.params.id;
-  
-      const project = await FixedRateProject.findById(projectId);
-  
-      if (!project) {
-        return res.status(404).json({ error: 'Project not found' });
-      }
-  
-      res.json(project);
-    } catch (err) {
-      next(err);
-    }
-  };
-  module.exports={
-    createProject,
-    deleteProject,
-    updateProject,
-    showprojectbyID,
-    showallProjects,
-    getFixedRateProjectById,
-    deleteFixedRateProject,
-    updateFixedRateProject,
-    getAllFixedRateProjects,
-    createFixedRateProject
+    await project.save();
+    res.status(201).json(project);
+  } catch (err) {
+    next(err);
   }
-  
+};
+
+
+
+
+// Update an existing project
+const updateProject = async (req, res, next) => {
+  try {
+    const projectId = req.params.id;
+    const projectUpdates = req.body;
+    const projectPic = req.file;
+
+    // Construct the full path URL
+    const baseUrl = `http://localhost:7000/project-pictures/`;
+
+    if (projectPic) {
+      // Resize the image
+      const resizedImage = await sharp(projectPic.path)
+        .resize(200) // Adjust the desired size as per your requirement
+        .toBuffer();
+
+      // Save the resized image with the correct filename
+      const resizedFilename = `resized-${projectPic.filename}`;
+      await sharp(resizedImage).toFile(`public/project-pictures/${resizedFilename}`);
+
+      // Update the project record with the resized image URL
+      projectUpdates.picture = baseUrl + resizedFilename; // Set the resized image URL for frontend display
+    }
+
+    const project = await Project.findByIdAndUpdate(projectId, projectUpdates, { new: true });
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+    res.json(project);
+  } catch (err) {
+    next(err);
+  }
+};
+
+
+// Get a specific project by ID
+const getallProjects = async (req, res) => {
+  try {
+    const project = await Project.find();
+    if (!project) {
+      return res.status(404).json({ error: 'Projects not found' });
+    }
+    res.json(project);
+  }catch (err) {
+    next(err);
+  }
+}
+// Get a specific project by ID
+const getProjectById = async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const project = await Project.findById(projectId);
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+    res.json(project);
+  }catch (err) {
+    next(err);
+  }
+}
+
+// Delete a project
+const deleteProject = async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const project = await Project.findByIdAndDelete(projectId);
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+    res.json({ message: 'Project deleted successfully' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = {
+  createProject,
+  updateProject,
+  getallProjects,
+  getProjectById,
+  deleteProject
+};
